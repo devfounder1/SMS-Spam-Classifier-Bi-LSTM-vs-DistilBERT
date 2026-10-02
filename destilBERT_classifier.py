@@ -8,6 +8,7 @@ import logging
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.optim import AdamW
+import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s : %(message)s')
 basic_url = "https://raw.githubusercontent.com/justmarkham/pycon-2016-tutorial/master/data/sms.tsv"
@@ -34,7 +35,6 @@ class SimpDataset(Dataset):
         return self.text[index], self.labels[index]
 
 MODEL_NAME = "distilbert-base-uncased"
-
 logging.info("Загрузка токенайзера, может занять (10-20 сек)") 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, num_labels = 2) 
@@ -85,15 +85,29 @@ for epoch in range(EPOCHS):
     model.eval()
     with torch.no_grad():
         val_loss = 0.0
+        
+        all_preds = []
+        all_labels = []
         for batch in test_loader:
             out = model(**batch)
             loss_v = out.loss
             val_loss += loss_v.item()
             
+            preds = torch.argmax(out, dim = 1)
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(batch['labels'].cpu().numpy())
+            
     avg_train_loss = train_loss / len(train_loader)
     avg_val_loss = val_loss / len(test_loader)
-    logging.info(f"Эпоха: {epoch+1}/{EPOCHS} | AVG Val_loss : {avg_val_loss:.4f} | AVG train_loss : {avg_train_loss:.4f}")
     
+    acc = accuracy_score(all_labels, all_preds)
+    prec = precision_score(all_labels, all_preds)
+    rec = recall_score(all_labels, all_preds)
+    f1 = f1_score(all_labels, all_preds)
+    
+    logging.info(f"Эпоха: {epoch+1}/{EPOCHS} | AVG Val_loss : {avg_val_loss:.4f} | AVG train_loss : {avg_train_loss:.4f}")
+    logging.info(f"Метрики Val: Accuracy={acc:.4f} | Precision={prec:.4f} | Recall={rec:.4f} | F1={f1:.4f}")
+
     if avg_val_loss < best_val_loss:
         best_val_loss = avg_val_loss
         patience_counter = 0
@@ -105,3 +119,17 @@ for epoch in range(EPOCHS):
         if patience_counter >= patience:
             logging.info(f"Произошел Early Stopping : {epoch+1}. Лучший val_loss: {best_val_loss}")
             break
+        
+if best_model_weights is not None:
+    model.load_state_dict(best_model_weights)
+    logging.info("Загруженны лучшие веса модели !")
+    
+logging.info("Fine - Tuning УСПЕШНО ЗАВЕРШЕН !!!")
+
+SAVE_DIR = "./models/distilbert"
+os.makedirs(SAVE_DIR, exist_ok=True)
+logging.info(f"Сохраняем модель и токенизатор в {SAVE_DIR}")
+
+model.save_pretrained(SAVE_DIR)
+tokenizer.save_pretrained(SAVE_DIR)
+logging.info("Сохранение модели и токенизатора успешно завершено!")
