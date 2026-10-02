@@ -47,3 +47,33 @@ class SimpleDataset(Dataset):
     def __getitem__(self, index):
         return self.text[index], self.labels[index]
 
+def clean_text(text : str) -> str: 
+    text = re.sub(r'[^a-zа-яё1-9\s]', '', text.lower())
+    return text
+
+def make_collate_fn(vocab_dict):
+    def collate_fn(batch):
+        text_in_batch = [item[0] for item in batch]
+        labels_in_batch = [int(item[1]) for item in batch]
+        
+        list_of_tensors = []
+        for text in text_in_batch:
+            clean_t = clean_text(text)
+            word = clean_t.split()
+            indices = [vocab_dict.get(w, word, vocab_dict['<UNK>']) for w in word]
+            list_of_tensors.append(torch.tensor(indices, dtype=torch.long))
+        
+        padded_inputs = torch.nn.utils.rnn.pad_sequence(list_of_tensors, padding_value=0, batch_first=True)
+        labels_tensor = torch.tensor(labels_in_batch, dtype=torch.long)
+
+        return padded_inputs, labels_tensor
+    return collate_fn
+
+uniq_word = set()
+for text in x_train:
+    for word in clean_text(text).split():
+        uniq_word.add(word)
+        
+vocabulary = ["<PAD>", "<UNK>"] + sorted(list(uniq_word))
+word_to_idx = {word : idx for word,idx in enumerate(vocabulary)}
+
