@@ -8,6 +8,7 @@ import re
 import copy
 import os
 import json
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s : %(message)s')
 basic_url = "https://raw.githubusercontent.com/justmarkham/pycon-2016-tutorial/master/data/sms.tsv"
@@ -102,6 +103,7 @@ patience_count = 0
 best_weights = None
 
 
+
 for epoch in range(EPOCHS):
     model.train()
     train_loss = 0.0
@@ -118,13 +120,29 @@ for epoch in range(EPOCHS):
     
     with torch.no_grad():
         val_loss = 0.0
+        
+        all_preds = []
+        all_labels = []
+        
         for inp, batch_labels in test_loader:
             out = model(inp)
             loss_v = criterion(out, batch_labels)
             val_loss += loss_v.item()
-    
+
+            preds = torch.argmax(out, dim = 1)
+            
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(batch_labels.cpu().numpy())
+            
     avg_train_loss = train_loss / len(train_loader)
     avg_val_loss = val_loss / len(test_loader)
+    
+    acc = accuracy_score(all_labels, all_preds)
+    prec = precision_score(all_labels, all_preds)
+    rec = recall_score(all_labels, all_preds)
+    f1 = f1_score(all_labels, all_preds)
+    
+    logging.info(f"Метрики Val: Accuracy={acc:.4f} | Precision={prec:.4f} | Recall={rec:.4f} | F1={f1:.4f}")
     logging.info(f"Эпоха {epoch+1} / {EPOCHS} | AVG train loss : {avg_train_loss} | AVG val loss : {avg_val_loss}")
     
     if avg_val_loss < best_val_loss:
