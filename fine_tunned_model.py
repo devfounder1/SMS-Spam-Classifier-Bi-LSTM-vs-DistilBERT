@@ -34,3 +34,16 @@ class LSTMclassifier(nn.Module):
         last_layer_lstm = torch.cat((hidden[-2],hidden[-1]), dim=1) 
         logits = self.line(last_layer_lstm)
         return logits
+    
+class SimpleDataset(Dataset):
+    def __init__(self, text, labels, vocab_size):
+        self.text = text
+        self.labels = labels
+        self.vocab_size = vocab_size
+        
+    def __len__(self):
+        return len(self.vocab_size)
+    
+    def __getitem__(self, index):
+        return self.text[index], self.labels[index]
+
