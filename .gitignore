@@ -1,0 +1,23 @@
+# Модели и артефакты обучения
+models/
+*.pth
+*.bin
+*.safetensors
+*.pt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+
+# macOS мусор
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
