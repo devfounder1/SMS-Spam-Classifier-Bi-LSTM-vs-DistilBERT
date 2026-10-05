@@ -122,13 +122,17 @@ for epoch in range(EPOCHS):
         
 if best_hf_model_weights is not None:
     model.load_state_dict(best_hf_model_weights)
-    logging.info("Загруженны лучшие веса модели !")
+    logging.info("Загружены лучшие веса модели!")
     
 logging.info("Fine - Tuning УСПЕШНО ЗАВЕРШЕН !!!")
 
 SAVE_DIR = "./models/distilbert"
 os.makedirs(SAVE_DIR, exist_ok=True)
 logging.info(f"Сохраняем модель и токенизатор в {SAVE_DIR}")
+
+model.config.num_labels = 2
+model.config.id2label = {0: "ham", 1: "spam"}
+model.config.label2id = {"ham": 0, "spam": 1}
 
 model.save_pretrained(SAVE_DIR)
 tokenizer.save_pretrained(SAVE_DIR)

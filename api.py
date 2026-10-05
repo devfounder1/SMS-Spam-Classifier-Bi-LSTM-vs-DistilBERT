@@ -13,17 +13,31 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s : %(message)s')
 
 class LSTMclasssifier(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, hidden_dim, num_classes):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, num_classes, num_layers=2, bidirectional=True):
         super(LSTMclasssifier, self).__init__()
         
         self.embeddings = nn.Embedding(embedding_dim=embedding_dim, num_embeddings=vocab_size, padding_idx=0)
-        self.lstm = nn.LSTM(hidden_size=hidden_dim, bidirectional=True, batch_first=True, dropout=0.3, input_size=embedding_dim,num_layers=2)
-        self.line = nn.Linear(in_features=hidden_dim * 2, out_features=num_classes)
+        self.lstm = nn.LSTM(
+            input_size=embedding_dim, 
+            hidden_size=hidden_dim, 
+            num_layers=num_layers, 
+            batch_first=True, 
+            bidirectional=bidirectional, 
+            dropout=0.3 if num_layers > 1 else 0.0
+        )
+        # Если bidirectional=True, размерность умножается на 2
+        out_features = hidden_dim * 2 if bidirectional else hidden_dim
+        self.line = nn.Linear(in_features=out_features, out_features=num_classes)
         
     def forward(self, x):
         x = self.embeddings(x)
         output, (hidden, cell) = self.lstm(x)
-        last_layer = torch.cat((hidden[-2], hidden[-1]), dim=1)
+        
+        if self.lstm.bidirectional:
+            last_layer = torch.cat((hidden[-2], hidden[-1]), dim=1)
+        else:
+            last_layer = hidden[-1]
+            
         logits = self.line(last_layer)
         return logits
 
@@ -33,8 +47,8 @@ hf_tokenizer = None
 hf_model = None
 
 def clean_text(text : str) -> str: 
-    re.sub(r'[^a-zа-я1-9\s]', '', text.lower())
-    return text
+    return re.sub(r'[^a-zа-я1-9\s]', '', text.lower())
+    
     
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,9 +67,9 @@ async def lifespan(app: FastAPI):
     lstm_model.load_state_dict(torch.load("./models/lstm/model.pth",  map_location="cpu"))
     lstm_model.eval()
     
-    # Загрузка DestilBERT
-    hf_tokenizer = AutoTokenizer.from_pretrained("./models/destilbert")
-    hf_model = AutoModelForSequenceClassification.from_pretrained("./models/destilbert")
+    # Загрузка DistilBERT
+    hf_tokenizer = AutoTokenizer.from_pretrained("./models/distilbert")
+    hf_model = AutoModelForSequenceClassification.from_pretrained("./models/distilbert")
     hf_model.eval()
     
     logging.info("Обе модели загрузились успешно")
@@ -63,7 +77,7 @@ async def lifespan(app: FastAPI):
     
 app = FastAPI(
     title="SMS Spam classifier API",
-    description="Сравнение LSTM и DestilBERT для классификации спама",
+    description="Сравнение LSTM и DistilBERT для классификации спама",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -104,8 +118,8 @@ def predict_lstm(request : TextRequest):
         confidence_ham=round(probs[0], 4),
     )
     
-@app.post("/predict/destilBERT", response_model=PredictionResponse)
-def predict_destilBERT(request : TextRequest):
+@app.post("/predict/distilbert", response_model=PredictionResponse)
+def predict_distilbert(request : TextRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Текст не может быть пустым")
     
@@ -123,7 +137,7 @@ def predict_destilBERT(request : TextRequest):
         
     return PredictionResponse(
         text=request.text,
-        model_used="destilBERT (Hugging Face)",
+        model_used="distilBERT (Hugging Face)",
         is_spam = bool(probs[1] > probs[0]),
         confidence_spam=round(probs[1], 4),
         confidence_ham=round(probs[0], 4),

@@ -47,7 +47,7 @@ pip install -r requirements.txt
 # 3. Запускаем API сервер
 uvicorn api:app --reload
 ```
-*Примечание: Для работы API предварительно необходимо обучить и сохранить модели, запустив скрипты `LSTM_classifier.py` и `destilBERT_classifier.py`, чтобы в папке `models/` появились веса.*
+*Примечание: Для работы API предварительно необходимо обучить и сохранить модели, запустив скрипты `LSTM_classifier.py` и `distilBERT_classifier.py`, чтобы в папке `models/` появились веса.*
 
 ### Docker Запуск
 
@@ -115,7 +115,7 @@ curl -X POST "http://localhost:8000/predict/distilbert" \
 .
 ├── api.py                          # FastAPI сервер с эндпоинтами для обеих моделей
 ├── LSTM_classifier.py              # Скрипт для обучения и сохранения Bi-LSTM с нуля
-├── destilBERT_classifier.py        # Скрипт для fine-tuning DistilBERT
+├── distilBERT_classifier.py        # Скрипт для fine-tuning DistilBERT
 ├── requirements.txt                # Зависимости проекта
 ├── Dockerfile                      # Инструкции для сборки Docker-образа
 ├── .gitignore                      # Исключенные файлы (модели, кэш, venv)
