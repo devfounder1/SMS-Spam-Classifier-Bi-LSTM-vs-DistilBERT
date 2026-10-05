@@ -9,6 +9,7 @@ import re
 import torch.nn.functional as F
 from contextlib import asynccontextmanager
 import logging
+from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s : %(message)s')
 
@@ -80,6 +81,14 @@ app = FastAPI(
     description="Сравнение LSTM и DistilBERT для классификации спама",
     version="1.0.0",
     lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Разрешаем запросы с любых источников
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешаем все методы (GET, POST и т.д.)
+    allow_headers=["*"],  # Разрешаем все заголовки
 )
 
 class TextRequest(BaseModel):

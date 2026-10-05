@@ -130,9 +130,10 @@ SAVE_DIR = "./models/distilbert"
 os.makedirs(SAVE_DIR, exist_ok=True)
 logging.info(f"Сохраняем модель и токенизатор в {SAVE_DIR}")
 
-model.config.num_labels = 2
-model.config.id2label = {0: "ham", 1: "spam"}
-model.config.label2id = {"ham": 0, "spam": 1}
+# паспорт модели
+model.config.num_labels = 2 # Сколько классов она распознаёт (2)
+model.config.id2label = {0: "ham", 1: "spam"} #Как числа переводятся в слова (0=ham, 1=spam)
+model.config.label2id = {"ham": 0, "spam": 1} #Как слова переводятся в числа (ham=0, spam=1)
 
 model.save_pretrained(SAVE_DIR)
 tokenizer.save_pretrained(SAVE_DIR)
