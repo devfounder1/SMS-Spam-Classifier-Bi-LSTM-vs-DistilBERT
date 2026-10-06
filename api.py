@@ -11,8 +11,25 @@ from contextlib import asynccontextmanager
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from datetime import datetime
+from collections import defaultdict
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s : %(message)s')
+
+lstm_model = None
+lstm_vocab = None
+hf_tokenizer = None
+hf_model = None
+
+request_status = {
+    "total_requests" : 0,
+    "spam_count" : 0,
+    "ham_count" : 0,
+    "lstm_requests" : 0,
+    "distilbert_requests" : 0,
+    "compare_requests" : 0,
+    "last_request" : None
+}
 
 class LSTMclasssifier(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, num_classes, num_layers=2, bidirectional=True):
@@ -42,11 +59,6 @@ class LSTMclasssifier(nn.Module):
             
         logits = self.line(last_layer)
         return logits
-
-lstm_model = None
-lstm_vocab = None
-hf_tokenizer = None
-hf_model = None
 
 def clean_text(text : str) -> str: 
     return re.sub(r'[^a-zа-я1-9\s]', '', text.lower())
@@ -126,14 +138,20 @@ def predict_lstm(request : TextRequest):
     clean_t = clean_text(request.text)
     words = clean_t.split()
     indeces = [lstm_vocab.get(w, lstm_vocab.get("<UNK>", 1)) for w in words]
-    
-    # Создание тензора 
     input_tensor = torch.tensor([indeces], dtype=torch.long)
     
     # Предсказание
     with torch.no_grad():
         logits = lstm_model(input_tensor)
         probs = F.softmax(logits, dim=1).squeeze().tolist()
+    
+    is_spam = bool(probs[1] > probs[0])
+    
+    request_status["total_requests"] += 1
+    request_status["lstm_requests"] += 1
+    request_status["spam_count"] += 1 if is_spam else 0
+    request_status["ham_count"] += 1 if not is_spam else 0
+    request_status["last_request"] = datetime.now().isoformat()
     
     return PredictionResponse(
         text = request.text,
@@ -159,7 +177,15 @@ def predict_distilbert(request : TextRequest):
     with torch.no_grad():
         outputs = hf_model(**inputs)
         probs = F.softmax(outputs.logits, dim = 1).squeeze().tolist()
-        
+    
+    is_spam = bool(probs[1] > probs[0])
+    
+    request_status["total_requests"] += 1
+    request_status["distilbert_requests"] += 1
+    request_status["spam_count"] += 1 if is_spam else 0
+    request_status["ham_count"] += 1 if not is_spam else 0
+    request_status["last_request"] = datetime.now().isoformat()   
+    
     return PredictionResponse(
         text=request.text,
         model_used="distilBERT (Hugging Face)",
@@ -167,3 +193,89 @@ def predict_distilbert(request : TextRequest):
         confidence_spam=round(probs[1], 4),
         confidence_ham=round(probs[0], 4),
     )
+
+class CompareResponse(BaseModel):
+    text : str
+    lstm_prediction : PredictionResponse
+    distilbert_prediction : PredictionResponse
+    model_agree : bool
+    final_verdict : str
+    recomendation : str
+    
+@app.post("/predict/compare", response_model=CompareResponse)
+def predict_compare(request : TextRequest):
+    if not request.text.strip():
+        raise HTTPException(status_code=400,detail="Текст не может быть пустым")
+
+    clean_t = clean_text(request.text)
+    words = clean_t.split()
+    indices = [lstm_vocab.get(w, lstm_vocab.get("<UNK>", 1)) for w in words]
+    input_tensors = torch.tensor([indices], dtype=torch.long)
+    
+    with torch.no_grad():
+        lstm_logits = lstm_model(input_tensors)
+        lstm_probs = F.softmax(lstm_logits, dim = 1).squeeze().tolist()
+        
+    lstm_result = PredictionResponse(
+        text = request.text,
+        model_used="Bi-LSTM (custom)",
+        is_spam=bool(lstm_probs[1] > lstm_probs[0]),
+        confidence_spam=round(lstm_probs[1], 4),        
+        confidence_ham=round(lstm_probs[0], 4),
+    )
+    
+    # предсказание distilBERT
+    inputs = hf_tokenizer(
+       request.text,
+       return_tensors = "pt",
+       truncation = True,
+       max_length = 64,
+       padding = True 
+    )
+    
+    with torch.no_grad():
+        bert_outputs = hf_model(**inputs)
+        bert_probs = F.softmax(bert_outputs.logits, dim = 1).squeeze().tolist()
+        
+    bert_result = PredictionResponse(
+        text = request.text,
+        model_used="DistilBERT (Hugging Face)",
+        is_spam=bool(bert_probs[1] > bert_probs[0]),
+        confidence_spam=round(bert_probs[1], 4),
+        confidence_ham=round(bert_probs[0], 4),
+    )
+    
+    model_agree = lstm_result.is_spam == bert_result.is_spam
+    
+    if model_agree:
+        final_verdict = "SPAM" if lstm_result.is_spam else "HAM"
+        recomendation = "Обе модели согласны - высокая увереннось в результате"
+    else: 
+        final_verdict = "SPAM" if bert_result.is_spam else "HAM"
+        recomendation = "Модели разошлись во мнениях. Приоритет отдан DestilBERT (F1 = 0.97)" 
+        
+    request_status["total_requests"] += 1
+    request_status["compare_requests"] += 1
+    request_status["last_request"] = datetime.now().isoformat()
+    
+    return CompareResponse(
+        text = request.text,
+        lstm_prediction=lstm_result,
+        distilbert_prediction=bert_result,
+        model_agree=model_agree,
+        final_verdict=final_verdict,
+        recomendation=recomendation
+    )
+    
+@app.get("/status")
+def get_status():
+    return {
+        "total_requests": request_status["total_requests"],
+        "spam_detected": request_status["spam_count"],
+        "ham_detected": request_status["ham_count"],
+        "lstm_requests": request_status["lstm_requests"],
+        "distilbert_requests": request_status["distilbert_requests"],
+        "compare_requests": request_status["compare_requests"],
+        "last_request": request_status["last_request"],
+        "uptime": "API работает стабильно",
+    }
