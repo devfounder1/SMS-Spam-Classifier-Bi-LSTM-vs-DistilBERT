@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🛡️ SMS Spam Classifier</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -19,410 +15,163 @@
             overflow-x: hidden;
         }
 
-        /* Анимированный фон с частицами */
         .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
         }
-
         .bg-animation::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
+            content: ''; position: absolute; width: 200%; height: 200%;
             background: 
                 radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
                 radial-gradient(circle at 40% 20%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
             animation: bgMove 20s ease-in-out infinite;
         }
-
         @keyframes bgMove {
             0%, 100% { transform: translate(0, 0) rotate(0deg); }
             50% { transform: translate(-50px, -50px) rotate(180deg); }
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
 
-        header {
-            text-align: center;
-            margin-bottom: 60px;
-            animation: fadeInDown 1s ease-out;
-        }
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        header { text-align: center; margin-bottom: 40px; animation: fadeInDown 1s ease-out; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
 
         h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
+            font-size: 3em; margin-bottom: 10px;
             background: linear-gradient(45deg, #00f2ff, #ff00e4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
             text-shadow: 0 0 30px rgba(0, 242, 255, 0.5);
         }
+        .subtitle { font-size: 1.2em; color: #a0a0a0; margin-bottom: 20px; }
 
-        .subtitle {
-            font-size: 1.2em;
-            color: #a0a0a0;
-            margin-bottom: 20px;
-        }
-
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
+        .stats { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 20px; }
         .stat-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px 30px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            transition: transform 0.3s ease;
+            background: rgba(255, 255, 255, 0.05); padding: 15px 30px; border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); transition: transform 0.3s ease;
         }
+        .stat-item:hover { transform: translateY(-5px); }
+        .stat-value { font-size: 2em; font-weight: bold; color: #00f2ff; }
+        .stat-label { color: #888; font-size: 0.9em; }
 
-        .stat-item:hover {
-            transform: translateY(-5px);
+        /* Примеры для быстрого теста */
+        .examples { text-align: center; margin-bottom: 30px; }
+        .example-chip {
+            display: inline-block; padding: 8px 16px; margin: 5px; border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ccc; cursor: pointer; font-size: 0.9em; transition: all 0.3s ease;
         }
+        .example-chip:hover { background: rgba(0, 242, 255, 0.2); border-color: #00f2ff; color: #fff; }
 
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #00f2ff;
-        }
-
-        .stat-label {
-            color: #888;
-            font-size: 0.9em;
-        }
-
-        .models-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
+        .models-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 30px; margin-bottom: 40px; }
         .model-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            animation: fadeInUp 1s ease-out;
+            background: rgba(255, 255, 255, 0.05); border-radius: 20px; padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
+            transition: all 0.3s ease; animation: fadeInUp 1s ease-out;
         }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .model-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0, 242, 255, 0.2); border-color: rgba(0, 242, 255, 0.5); }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        .model-header { display: flex; align-items: center; margin-bottom: 20px; }
+        .model-icon { font-size: 3em; margin-right: 20px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .model-title { font-size: 1.8em; margin-bottom: 5px; }
+        .model-subtitle { color: #888; font-size: 0.9em; }
 
-        .model-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.2);
-            border-color: rgba(0, 242, 255, 0.5);
-        }
-
-        .model-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .model-icon {
-            font-size: 3em;
-            margin-right: 20px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .model-title {
-            font-size: 1.8em;
-            margin-bottom: 5px;
-        }
-
-        .model-subtitle {
-            color: #888;
-            font-size: 0.9em;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
+        .input-group { margin-bottom: 20px; position: relative; }
         textarea {
-            width: 100%;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(0, 0, 0, 0.3);
-            color: #fff;
-            font-size: 1em;
-            resize: vertical;
-            min-height: 100px;
+            width: 100%; padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3); color: #fff; font-size: 1em; resize: vertical; min-height: 100px;
             transition: all 0.3s ease;
         }
-
-        textarea:focus {
-            outline: none;
-            border-color: #00f2ff;
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
-        }
+        textarea:focus { outline: none; border-color: #00f2ff; box-shadow: 0 0 20px rgba(0, 242, 255, 0.3); }
+        
+        /* Анимация ошибки (тряска) */
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; border-color: #ff4757 !important; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
 
         .btn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 1.1em; font-weight: bold;
+            cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
         }
-
-        .btn-lstm {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
-            color: white;
+        .btn-lstm { background: linear-gradient(45deg, #ff6b6b, #ee5a6f); color: white; }
+        .btn-bert { background: linear-gradient(45deg, #00f2ff, #00d4ff); color: #000; }
+        .btn-both { 
+            background: linear-gradient(45deg, #a8ff78, #78ffd6); color: #000; 
+            font-size: 1.2em; padding: 18px; margin-top: 10px;
         }
+        .btn:hover { transform: scale(1.02); box-shadow: 0 10px 30px rgba(0, 242, 255, 0.4); }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .btn-bert {
-            background: linear-gradient(45deg, #00f2ff, #00d4ff);
-            color: #000;
+        .result { margin-top: 20px; padding: 20px; border-radius: 10px; background: rgba(0, 0, 0, 0.3); display: none; animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        .result.show { display: block; }
+
+        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .result-label { font-size: 1.2em; font-weight: bold; }
+        
+        .consensus-badge {
+            padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9em; margin-bottom: 15px;
+            text-align: center; display: none;
         }
+        .consensus-yes { background: rgba(46, 213, 115, 0.2); color: #2ed573; border: 1px solid #2ed573; }
+        .consensus-no { background: rgba(255, 165, 2, 0.2); color: #ffa502; border: 1px solid #ffa502; }
 
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(0, 242, 255, 0.4);
-        }
+        .spam-badge { padding: 5px 15px; border-radius: 20px; font-weight: bold; animation: glow 2s infinite; }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 10px currentColor; } 50% { box-shadow: 0 0 20px currentColor; } }
+        .spam-true { background: #ff4757; color: white; }
+        .spam-false { background: #2ed573; color: white; }
 
-        .btn:active {
-            transform: scale(0.95);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .result {
-            margin-top: 20px;
-            padding: 20px;
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            display: none;
-            animation: slideIn 0.5s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .result.show {
-            display: block;
-        }
-
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .result-label {
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-
-        .spam-badge {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            animation: glow 2s infinite;
-        }
-
-        @keyframes glow {
-            0%, 100% { box-shadow: 0 0 10px currentColor; }
-            50% { box-shadow: 0 0 20px currentColor; }
-        }
-
-        .spam-true {
-            background: #ff4757;
-            color: white;
-        }
-
-        .spam-false {
-            background: #2ed573;
-            color: white;
-        }
-
-        .confidence-bars {
-            margin-top: 15px;
-        }
-
-        .bar-container {
-            margin-bottom: 10px;
-        }
-
-        .bar-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 0.9em;
-        }
-
-        .bar {
-            height: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .bar-fill {
-            height: 100%;
-            border-radius: 12px;
-            transition: width 1s ease-out;
-            position: relative;
-            overflow: hidden;
-        }
-
+        .confidence-bars { margin-top: 15px; }
+        .bar-container { margin-bottom: 10px; }
+        .bar-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em; }
+        .bar { height: 25px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; position: relative; }
+        .bar-fill { height: 100%; border-radius: 12px; transition: width 1s ease-out; position: relative; overflow: hidden; }
         .bar-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
             animation: shimmer 2s infinite;
         }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .bar-spam { background: linear-gradient(90deg, #ff4757, #ff6348); }
+        .bar-ham { background: linear-gradient(90deg, #2ed573, #7bed9f); }
 
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        .bar-spam {
-            background: linear-gradient(90deg, #ff4757, #ff6348);
-        }
-
-        .bar-ham {
-            background: linear-gradient(90deg, #2ed573, #7bed9f);
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
+        .loading { display: none; text-align: center; padding: 20px; }
+        .loading.show { display: block; }
         .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-top: 4px solid #00f2ff;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid #00f2ff; border-radius: 50%;
+            width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 10px;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        footer {
-            text-align: center;
-            padding: 40px 20px;
-            color: #666;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin-top: 60px;
-        }
-
+        footer { text-align: center; padding: 40px 20px; color: #666; border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 60px; }
         @media (max-width: 768px) {
-            .models-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            h1 {
-                font-size: 2em;
-            }
-            
-            .stats {
-                gap: 20px;
-            }
+            .models-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2em; }
+            .stats { gap: 20px; }
         }
     </style>
 </head>
 <body>
     <div class="bg-animation"></div>
-    
     <div class="container">
         <header>
-            <h1>SMS Spam Classifier</h1>
+            <h1>🛡️ SMS Spam Classifier</h1>
             <p class="subtitle">Сравнение Bi-LSTM и DistilBERT для классификации спама</p>
-            
             <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-value">99.2%</div>
-                    <div class="stat-label">Accuracy</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">97.3%</div>
-                    <div class="stat-label">Precision</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">96.9%</div>
-                    <div class="stat-label">F1-Score</div>
-                </div>
+                <div class="stat-item"><div class="stat-value">99.2%</div><div class="stat-label">Accuracy</div></div>
+                <div class="stat-item"><div class="stat-value">97.3%</div><div class="stat-label">Precision</div></div>
+                <div class="stat-item"><div class="stat-value">96.9%</div><div class="stat-label">F1-Score</div></div>
             </div>
         </header>
+
+        <div class="examples">
+            <p style="color: #888; margin-bottom: 10px;">Попробуйте примеры:</p>
+            <span class="example-chip" onclick="setExample('You won a free prize! Click here to claim.')">You won a free prize!</span>
+            <span class="example-chip" onclick="setExample('Hey, are we still meeting at 5?')">Hey, meeting at 5?</span>
+            <span class="example-chip" onclick="setExample('URGENT: Your bank account has been suspended. Reply with your PIN.')">URGENT: Bank account</span>
+            <span class="example-chip" onclick="setExample('Can you pick up some milk on your way home?')">Pick up some milk?</span>
+        </div>
 
         <div class="models-grid">
             <!-- LSTM Card -->
@@ -434,20 +183,11 @@
                         <p class="model-subtitle">Custom Neural Network</p>
                     </div>
                 </div>
-                
                 <div class="input-group">
                     <textarea id="lstm-input" placeholder="Введите SMS для проверки..."></textarea>
                 </div>
-                
-                <button class="btn btn-lstm" onclick="checkLSTM()">
-                    Проверить через LSTM
-                </button>
-                
-                <div class="loading" id="lstm-loading">
-                    <div class="spinner"></div>
-                    <p>Анализируем текст...</p>
-                </div>
-                
+                <button class="btn btn-lstm" onclick="checkLSTM()">Проверить через LSTM</button>
+                <div class="loading" id="lstm-loading"><div class="spinner"></div><p>Анализируем текст...</p></div>
                 <div class="result" id="lstm-result">
                     <div class="result-header">
                         <span class="result-label">Результат:</span>
@@ -455,22 +195,12 @@
                     </div>
                     <div class="confidence-bars">
                         <div class="bar-container">
-                            <div class="bar-label">
-                                <span> Spam</span>
-                                <span id="lstm-spam-pct">0%</span>
-                            </div>
-                            <div class="bar">
-                                <div class="bar-fill bar-spam" id="lstm-spam-bar" style="width: 0%"></div>
-                            </div>
+                            <div class="bar-label"><span>Spam</span><span id="lstm-spam-pct">0%</span></div>
+                            <div class="bar"><div class="bar-fill bar-spam" id="lstm-spam-bar" style="width: 0%"></div></div>
                         </div>
                         <div class="bar-container">
-                            <div class="bar-label">
-                                <span>Ham</span>
-                                <span id="lstm-ham-pct">0%</span>
-                            </div>
-                            <div class="bar">
-                                <div class="bar-fill bar-ham" id="lstm-ham-bar" style="width: 0%"></div>
-                            </div>
+                            <div class="bar-label"><span>Ham</span><span id="lstm-ham-pct">0%</span></div>
+                            <div class="bar"><div class="bar-fill bar-ham" id="lstm-ham-bar" style="width: 0%"></div></div>
                         </div>
                     </div>
                 </div>
@@ -485,20 +215,11 @@
                         <p class="model-subtitle">Hugging Face Transformer</p>
                     </div>
                 </div>
-                
                 <div class="input-group">
                     <textarea id="bert-input" placeholder="Введите SMS для проверки..."></textarea>
                 </div>
-                
-                <button class="btn btn-bert" onclick="checkBERT()">
-                    ⚡ Проверить через DistilBERT
-                </button>
-                
-                <div class="loading" id="bert-loading">
-                    <div class="spinner"></div>
-                    <p>Анализируем текст...</p>
-                </div>
-                
+                <button class="btn btn-bert" onclick="checkBERT()">Проверить через DistilBERT</button>
+                <div class="loading" id="bert-loading"><div class="spinner"></div><p>Анализируем текст...</p></div>
                 <div class="result" id="bert-result">
                     <div class="result-header">
                         <span class="result-label">Результат:</span>
@@ -506,95 +227,108 @@
                     </div>
                     <div class="confidence-bars">
                         <div class="bar-container">
-                            <div class="bar-label">
-                                <span>Spam</span>
-                                <span id="bert-spam-pct">0%</span>
-                            </div>
-                            <div class="bar">
-                                <div class="bar-fill bar-spam" id="bert-spam-bar" style="width: 0%"></div>
-                            </div>
+                            <div class="bar-label"><span>Spam</span><span id="bert-spam-pct">0%</span></div>
+                            <div class="bar"><div class="bar-fill bar-spam" id="bert-spam-bar" style="width: 0%"></div></div>
                         </div>
                         <div class="bar-container">
-                            <div class="bar-label">
-                                <span>Ham</span>
-                                <span id="bert-ham-pct">0%</span>
-                            </div>
-                            <div class="bar">
-                                <div class="bar-fill bar-ham" id="bert-ham-bar" style="width: 0%"></div>
-                            </div>
+                            <div class="bar-label"><span>Ham</span><span id="bert-ham-pct">0%</span></div>
+                            <div class="bar"><div class="bar-fill bar-ham" id="bert-ham-bar" style="width: 0%"></div></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <button class="btn btn-both" onclick="checkBoth()">⚡ Проверить в обеих моделях одновременно</button>
+        <div class="consensus-badge" id="consensus-badge"></div>
+
         <footer>
             <p>Built with ❤️ using PyTorch, Hugging Face & FastAPI</p>
             <p style="margin-top: 10px; font-size: 0.9em;">
-                <a href="/docs" style="color: #00f2ff; text-decoration: none;">API Documentation</a>
+                <a href="/docs" style="color: #00f2ff; text-decoration: none;">API Documentation (Swagger)</a>
             </p>
-        </footer>
+        </footer</div>
     </div>
 
     <script>
         const API_BASE = window.location.origin;
 
+        function setExample(text) {
+            document.getElementById('lstm-input').value = text;
+            document.getElementById('bert-input').value = text;
+        }
+
+        function shakeInput(id) {
+            const el = document.getElementById(id);
+            el.classList.add('shake');
+            setTimeout(() => el.classList.remove('shake'), 500);
+        }
+
         async function checkLSTM() {
             const input = document.getElementById('lstm-input').value;
-            if (!input.trim()) {
-                alert('Введите текст для проверки!');
-                return;
-            }
-
-            const loading = document.getElementById('lstm-loading');
-            const result = document.getElementById('lstm-result');
-            const btn = event.target;
-
-            loading.classList.add('show');
-            result.classList.remove('show');
-            btn.disabled = true;
-
-            try {
-                const response = await fetch(`${API_BASE}/predict/lstm`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: input })
-                });
-
-                const data = await response.json();
-                displayResult('lstm', data);
-            } catch (error) {
-                alert('Ошибка при запросе к API: ' + error.message);
-            } finally {
-                loading.classList.remove('show');
-                btn.disabled = false;
-            }
+            if (!input.trim()) { shakeInput('lstm-input'); return; }
+            await runCheck('lstm', input);
         }
 
         async function checkBERT() {
             const input = document.getElementById('bert-input').value;
-            if (!input.trim()) {
-                alert('Введите текст для проверки!');
-                return;
-            }
+            if (!input.trim()) { shakeInput('bert-input'); return; }
+            await runCheck('bert', input);
+        }
 
-            const loading = document.getElementById('bert-loading');
-            const result = document.getElementById('bert-result');
-            const btn = event.target;
+        async function checkBoth() {
+            const input = document.getElementById('lstm-input').value || document.getElementById('bert-input').value;
+            if (!input.trim()) { 
+                shakeInput('lstm-input'); 
+                shakeInput('bert-input'); 
+                return; 
+            }
+            // Синхронизируем перед проверкой
+            document.getElementById('lstm-input').value = input;
+            document.getElementById('bert-input').value = input;
+            
+            document.getElementById('consensus-badge').style.display = 'none';
+            await Promise.all([runCheck('lstm', input), runCheck('bert', input)]);
+            
+            // Проверка согласия моделей
+            const lstmRes = window.lastLstmResult;
+            const bertRes = window.lastBertResult;
+            const badge = document.getElementById('consensus-badge');
+            
+            if (lstmRes && bertRes) {
+                badge.style.display = 'block';
+                if (lstmRes.is_spam === bertRes.is_spam) {
+                    badge.className = 'consensus-badge consensus-yes';
+                    badge.textContent = 'Модели согласны в своем предсказании';
+                } else {
+                    badge.className = 'consensus-badge consensus-no';
+                    badge.textContent = 'Модели разошлись во мнениях!';
+                }
+            }
+        }
+
+        async function runCheck(model, input) {
+            const loading = document.getElementById(`${model}-loading`);
+            const result = document.getElementById(`${model}-result`);
+            const btn = document.querySelector(model === 'lstm' ? '.btn-lstm' : '.btn-bert');
 
             loading.classList.add('show');
             result.classList.remove('show');
             btn.disabled = true;
 
             try {
-                const response = await fetch(`${API_BASE}/predict/distilbert`, {
+                const endpoint = model === 'lstm' ? '/predict/lstm' : '/predict/distilbert';
+                const response = await fetch(`${API_BASE}${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: input })
                 });
-
                 const data = await response.json();
-                displayResult('bert', data);
+                
+                if (model === 'lstm') window.lastLstmResult = data;
+                else window.lastBertResult = data;
+                
+                displayResult(model, data);
             } catch (error) {
                 alert('Ошибка при запросе к API: ' + error.message);
             } finally {
@@ -611,7 +345,6 @@
             const spamBar = document.getElementById(`${model}-spam-bar`);
             const hamBar = document.getElementById(`${model}-ham-bar`);
 
-            // Обновляем бейдж
             if (data.is_spam) {
                 badge.textContent = 'SPAM';
                 badge.className = 'spam-badge spam-true';
@@ -620,17 +353,13 @@
                 badge.className = 'spam-badge spam-false';
             }
 
-            // Обновляем проценты
             const spamPercent = (data.confidence_spam * 100).toFixed(1);
             const hamPercent = (data.confidence_ham * 100).toFixed(1);
             
             spamPct.textContent = `${spamPercent}%`;
             hamPct.textContent = `${hamPercent}%`;
-
-            // Показываем результат
             result.classList.add('show');
 
-            // Анимируем прогресс-бары (небольшая задержка для плавности)
             setTimeout(() => {
                 spamBar.style.width = `${spamPercent}%`;
                 hamBar.style.width = `${hamPercent}%`;
@@ -641,7 +370,6 @@
         document.getElementById('lstm-input').addEventListener('input', function() {
             document.getElementById('bert-input').value = this.value;
         });
-
         document.getElementById('bert-input').addEventListener('input', function() {
             document.getElementById('lstm-input').value = this.value;
         });
