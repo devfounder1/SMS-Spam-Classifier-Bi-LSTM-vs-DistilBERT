@@ -50,8 +50,7 @@ hf_model = None
 
 def clean_text(text : str) -> str: 
     return re.sub(r'[^a-zа-я1-9\s]', '', text.lower())
-    
-    
+     
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     
@@ -97,7 +96,7 @@ def get_root():
     try:
         with open("index.html", "r", encoding="utf-8") as f:
             return f.read()
-    except FileExistsError:
+    except FileNotFoundError:
         return HTMLResponse(content="<h1>Ошибка: файл index.html не найден в папке проекта</h1>", status_code=500)
 
 @app.get("/health")
@@ -168,11 +167,3 @@ def predict_distilbert(request : TextRequest):
         confidence_spam=round(probs[1], 4),
         confidence_ham=round(probs[0], 4),
     )
-
-@app.get("/")
-def health_check():
-    return {
-        "status" : "OK",
-        "Models_loaded" : True,
-        "Endpints" : ["/predict/lstm", "/predict/distilBERT"]
-    }
