@@ -1,0 +1,51 @@
+name: CI Pipeline
+# Запускаем при каждом пуше и pull request в ветку main
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. Скачиваем код репозитория
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Устанавливаем Python 3.10
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    # 3. Кэшируем зависимости (ускоряет следующие запуски)
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    # 4. Устанавливаем зависимости + инструменты для тестов
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 pytest httpx
+
+    # 5. Проверка стиля кода (Linting)
+    - name: Lint with flake8
+      run: |
+        # Останавливаем сборку, если есть критические ошибки синтаксиса или неиспользуемые импорты
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Предупреждения о длине строк и пробелах не ломают сборку, но выводятся в лог
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    # 6. Запуск тестов
+    - name: Test with pytest
+      run: |
+        pytest test_api.py -v
