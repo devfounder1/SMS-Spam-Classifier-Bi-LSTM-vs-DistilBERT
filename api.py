@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from contextlib import asynccontextmanager
 import logging
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s : %(message)s')
 
@@ -90,6 +91,22 @@ app.add_middleware(
     allow_methods=["*"],  # Разрешаем все методы (GET, POST и т.д.)
     allow_headers=["*"],  # Разрешаем все заголовки
 )
+
+@app.get("/", response_class=HTMLResponse)
+def get_root():
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileExistsError:
+        return HTMLResponse(content="<h1>Ошибка: файл index.html не найден в папке проекта</h1>", status_code=500)
+
+@app.get("/health")
+def health_check():
+    return {
+        "status" : "OK",
+        "Models_loaded" : True,
+        "Endpoints" : ["/predict/lstm", "/predict/distilbert"]
+    }
 
 class TextRequest(BaseModel):
     text : str
