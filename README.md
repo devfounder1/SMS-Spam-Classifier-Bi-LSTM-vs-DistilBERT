@@ -3,9 +3,15 @@
 ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)
+![CI/CD](https://github.com/devfounder1/SMS-Spam-Classifier-Bi-LSTM-vs-DistilBERT/actions/workflows/ci.yml/badge.svg)
+![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Models-yellow)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-API для классификации SMS-сообщений на спам/не спам с использованием двух различных архитектур. Проект демонстрирует эволюцию подходов в NLP: от классических рекуррентных сетей, написанных с нуля, до современных трансформеров.
+**Production-ready NLP API** для классификации SMS-сообщений, сравнивающий две различные архитектуры: кастомную рекуррентную сеть и современный трансформер. Проект реализован с соблюдением лучших практик MLOps: автоматизированное тестирование (CI/CD), версионирование весов через Hugging Face Hub и Docker-контейнеризация.
+
+🔗 **[Live Demo (Render)](https://sms-spam-classifier-bi-lstm-vs-distilbert.onrender.com)** *(может потребоваться ~30 сек для пробуждения сервиса)*
+
+---
 
 ## ️ Демонстрация интерфейса
 
@@ -111,6 +117,14 @@ curl -X POST "http://localhost:8000/predict/distilbert" \
 ### Swagger UI
 Интерактивная документация доступна по адресу: http://localhost:8000/docs
 
+### MLOps и Инженерные решения
+1. Версионирование моделей: Веса (~270 МБ) не хранятся в Git. Они загружаются динамически с Hugging Face Hub через скрипт download_models.py или прямо в процессе сборки Docker-образа.
+2. CI/CD Pipeline: Настроен GitHub Actions (.github/workflows/ci.yml). При каждом push в main автоматически запускаются:
+- **Линтинг кода (flake8)**
+- **Unit-тесты API (pytest), включая проверку валидации пустых запросов и корректности схем Pydantic.**
+3. Защита от Data Leakage: Предобработка текста (очистка, токенизация) применяется строго к входящим данным инференса, идентично пайплайну обучения.
+4. Graceful Degradation: Если модели не загружены (например, в среде CI), тесты корректно пропускаются (@pytest.mark.skipif), не ломая пайплайн.
+
 ## Модели
 Модели не включены в репозиторий из-за размера. Для локального запуска:
 1. Запустите LSTM_classifier.py для обучения и сохранения LSTM модели
@@ -129,22 +143,28 @@ curl -X POST "http://localhost:8000/predict/distilbert" \
 ## Структура проекта
 ```text
 .
-├── api.py                          # FastAPI сервер с эндпоинтами для обеих моделей
-├── LSTM_classifier.py              # Скрипт для обучения и сохранения Bi-LSTM с нуля
-├── distilBERT_classifier.py        # Скрипт для fine-tuning DistilBERT
-├── requirements.txt                # Зависимости проекта
-├── Dockerfile                      # Инструкции для сборки Docker-образа
-├── .gitignore                      # Исключенные файлы (модели, кэш, venv)
-├── screenshots/                    # Скриншоты интерфейса
-└── README.md                       # Документация проекта
+├── .github/workflows/ci.yml      # Конфигурация GitHub Actions (Lint + Pytest)
+├── api.py                        # FastAPI сервер с эндпоинтами и логикой сравнения
+├── download_models.py            # Скрипт для загрузки весов с Hugging Face Hub
+├── test_api.py                   # Unit-тесты для проверки API
+├── LSTM_classifier.py            # Скрипт обучения Bi-LSTM с нуля (для воспроизведения)
+├── distilBERT_classifier.py      # Скрипт fine-tuning DistilBERT (для воспроизведения)
+├── requirements.txt              # Зависимости проекта
+├── Dockerfile                    # Инструкции для сборки production-контейнера
+├── screenshots/                  # Скриншоты веб-интерфейса
+└── README.md                     # Эта документация
 ```
+*(Папка models/ исключена через .gitignore)*
 
-## Планы на будущее
-
-- [ ] Экспорт моделей в формат **ONNX** для ускорения инференса на CPU и снижения потребления памяти.
-- [ ] Добавление мониторинга метрик API в реальном времени (**Prometheus + Grafana**).
-- [ ] Настройка **CI/CD** пайплайна (GitHub Actions) с автоматическим тестированием эндпоинтов.
-- [ ] Деплой приложения на облачную платформу (AWS EC2 / Google Cloud Run).
+### Roadmap
+- Реализация и сравнение двух архитектур (Bi-LSTM vs DistilBERT)
+- Создание интерактивного веб-интерфейса и Swagger-документации
+- Настройка CI/CD пайплайна (GitHub Actions) с автоматическим тестированием
+- Интеграция Hugging Face Hub для управления весами моделей
+- Успешный Cloud Deployment (Render)
+- Экспорт моделей в формат ONNX для ускорения CPU-инференса и снижения footprint
+- Добавление мониторинга метрик API в реальном времени (Prometheus + Grafana)
+- Логирование всех предсказаний в базу данных для последующего анализа Data Drift
 
 ## Лицензия
 Этот проект распространяется под лицензией MIT. Подробности в файле [LICENSE](LICENSE).
