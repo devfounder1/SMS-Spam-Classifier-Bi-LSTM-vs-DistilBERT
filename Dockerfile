@@ -2,15 +2,21 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Устанавливаем git для клонирования моделей с Hugging Face
+# Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y git
 
 # Копируем requirements и устанавливаем зависимости
 COPY requirements.txt .
 RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 
-# Клонируем репозиторий с моделями из Hugging Face
-RUN git clone https://huggingface.co/butuzik/sms-spam-models /app/models
+# Устанавливаем huggingface_hub для скачивания моделей
+RUN pip install --no-cache-dir huggingface_hub
+
+# Копируем скрипт для скачивания моделей
+COPY download_models.py .
+
+# Скачиваем модели с Hugging Face Hub (это скачает настоящие файлы, а не Git LFS pointer'ы)
+RUN python download_models.py
 
 # Копируем весь код проекта
 COPY . .
