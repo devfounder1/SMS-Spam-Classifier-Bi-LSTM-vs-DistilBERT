@@ -77,7 +77,7 @@ async def lifespan(app: FastAPI):
         lstm_vocab = json.load(f)
 
     lstm_model = LSTMclasssifier(**lstm_config)
-    lstm_model.load_state_dict(torch.load("./models/lstm/model.pth",  map_location="cpu"))
+    lstm_model.load_state_dict(torch.load("./models/lstm/model.pth",  map_location="cpu", weights_only=False))
     lstm_model.eval()
     
     # Загрузка DistilBERT
